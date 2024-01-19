@@ -29,6 +29,7 @@ const totalRuntime = trainingData.reduce(function(acc, movies) {
 const avgRuntime = totalRuntime/trainingData.length
 
 // Start building neural network.
+// Indicate a good (positive/high value) or bad (negative/low value)
 const network = [
     [0, 0, 0],
     [0, 0, 0],
