@@ -60,6 +60,8 @@ function predictMovie(network, movie) {
     const predictedMovie = Object.assign(Object.assign({}, movie), { prediction });
     return predictedMovie;
 }
+const roboCop = trainingData[0];
+const predictedMovie = predictMovie(network, roboCop);
 function predictMovies(network, movies) {
     const predictedMovies = movies.map(movie => {
         return predictMovie(network, movie);
@@ -68,3 +70,29 @@ function predictMovies(network, movies) {
 }
 const predictedMovies = predictMovies(network, trainingData);
 console.log(predictedMovies);
+//Train Network
+function calculateError(movie) {
+    const difference = movie.target - movie.prediction;
+    const error = Math.abs(difference);
+    const finalMovie = Object.assign(Object.assign({}, movie), { error });
+    return finalMovie;
+}
+const finalMovie = calculateError(predictedMovie); //Start here in next meeting
+console.log(finalMovie);
+//Calculate Loss (average error) takes in array of movies, determines how far off a prediction was based on error
+function calculateLoss(movies) {
+    const totalError = movies.reduce((totalError, movie) => {
+        return totalError + movie.error;
+    }, 0);
+    const loss = totalError / movies.length;
+    return loss;
+}
+const finalMovies = trainingData.map((movie) => {
+    const predictedMovie = predictMovie(network, movie);
+    const finalMovie = calculateError(predictedMovie);
+    return finalMovie;
+});
+const loss = calculateLoss(finalMovies);
+console.log(loss);
+//Pass in a type as an arg/param
+//TypeScript Generic

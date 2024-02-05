@@ -6,13 +6,16 @@ interface Movie{
     year:number,
     runtime:number
 }
-
-interface PredictedMovie extends Movie{
-    target:number,
-    prediction:number
+interface TrainingMovie extends Movie {
+    target: number
+}
+//define the relationship between a predicted movie and a normal (training data) movie
+type Predicted <Unpredicted extends Movie> = Unpredicted & {prediction: number}
+interface FinalizedMovie extends Predicted<TrainingMovie> {
+    error:number
 }
 
-const trainingData = [
+const trainingData : TrainingMovie[] = [
         {title: "Robocop",
         year: 1987,
         runtime: 102,
@@ -78,12 +81,14 @@ function getPrediction(network: Network, movie:Movie){
 const prediction = getPrediction(network, trainingData[0])
 console.log(prediction)
 
-function predictMovie(network:Network, movie:Movie) {
+function predictMovie<Unpredicted extends Movie>(network:Network, movie:Unpredicted) {
     const prediction = getPrediction(network, movie)
-    const predictedMovie = {...movie, prediction}
+    const predictedMovie : Predicted<Unpredicted> = {...movie, prediction}
     return predictedMovie
 }
-const predictedMovie = predictMovie(network, trainingData[0])
+const roboCop = trainingData[0]
+
+const predictedMovie = predictMovie(network, roboCop)
 
 function predictMovies(network:Network, movies:Movie[]) {
     const predictedMovies = movies.map(movie => {
@@ -96,11 +101,38 @@ const predictedMovies = predictMovies(network, trainingData)
 console.log(predictedMovies)
 
 //Train Network
-function calculateError(movie:PredictedMovie){
+function calculateError(movie:Predicted<TrainingMovie>){
     const difference = movie.target - movie.prediction
     const error = Math.abs(difference)
-    const finalMovie = {...movie, error}
+    const finalMovie:FinalizedMovie = {...movie, error}
+    return finalMovie
 }
 const finalMovie = calculateError(predictedMovie) //Start here in next meeting
 
-//TypeScript Generics
+console.log(finalMovie)
+
+//Calculate Loss (average error) takes in array of movies, determines how far off a prediction was based on error
+function calculateLoss(movies:FinalizedMovie[]){
+    const totalError = movies.reduce((totalError, movie)=>{
+        return totalError + movie.error
+    }, 0)
+    const loss = totalError/movies.length
+    return loss
+}
+
+const finalMovies = trainingData.map((movie)=>{
+    const predictedMovie = predictMovie(network, movie)
+    const finalMovie = calculateError(predictedMovie)
+    return finalMovie
+})
+
+const loss = calculateLoss(finalMovies)
+console.log(loss)
+
+//Evolutionary Algo is NEXT
+
+//Pass in a type as an arg/param
+
+
+//TypeScript Generic
+
