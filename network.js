@@ -10,6 +10,15 @@ const trainingData = [
         runtime: 94,
         target: 0
     },
+    { title: "The Terminator",
+        year: 1984,
+        runtime: 107,
+        target: 1
+    }, { title: "The Notebook",
+        year: 2004,
+        runtime: 123,
+        target: 0
+    },
 ];
 // Need to compare movies on a relative scale.
 //Calculate the average year.
@@ -92,7 +101,66 @@ const finalMovies = trainingData.map((movie) => {
     const finalMovie = calculateError(predictedMovie);
     return finalMovie;
 });
+function finalizeMovies(network, movies) {
+    const finalMovies = trainingData.map((movie) => {
+        const predictedMovie = predictMovie(network, movie);
+        const finalMovie = calculateError(predictedMovie);
+        return finalMovie;
+    });
+    return finalMovies;
+}
+function getLoss(network, movies) {
+    const finalMovies = finalizeMovies(network, movies);
+    const loss = calculateLoss(finalMovies);
+    return loss;
+}
 const loss = calculateLoss(finalMovies);
 console.log(loss);
+//Evolutionary Algo is NEXT
+function mutate(value) {
+    const chaos = Math.random();
+    const upOrDown = chaos - 0.5;
+    return value + upOrDown;
+}
+//Mutate all axons in neural network
+function evolve(network) {
+    const evolved = network.map((axons) => {
+        const evolved0 = mutate(axons[0]);
+        const evolved1 = mutate(axons[1]);
+        const evolved2 = mutate(axons[2]);
+        const evolvedAxons = [evolved0, evolved1, evolved2];
+        return evolvedAxons;
+    });
+    return evolved;
+}
+function displayNumber(value) {
+    const short = value.toFixed(5);
+    return short;
+}
+function train(network) {
+    let steps = 1;
+    while (steps < 1000) {
+        const loss = getLoss(network, trainingData);
+        const offspring = evolve(network);
+        const offspringLoss = getLoss(offspring, trainingData);
+        const improvement = loss - offspringLoss;
+        if (improvement > 0.0001) {
+            network.forEach((axons, index) => {
+                network[index] = offspring[index];
+            });
+            steps = 1;
+            const short = displayNumber(loss);
+            console.log('loss:', short);
+        }
+        else
+            steps++;
+    }
+    console.log('network');
+    console.table(network);
+    const predictions = finalizeMovies(network, trainingData);
+    console.log('predictions');
+    console.table(predictions);
+}
+train(network);
 //Pass in a type as an arg/param
 //TypeScript Generic
