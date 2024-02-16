@@ -11,8 +11,13 @@ interface TrainingMovie extends Movie {
 }
 //define the relationship between a predicted movie and a normal (training data) movie
 type Predicted <Unpredicted extends Movie> = Unpredicted & {prediction: number}
-interface FinalizedMovie extends Predicted<TrainingMovie> {
+interface TrainedMovie extends Predicted<TrainingMovie> {
     error:number
+}
+
+function table(label: string, data: unknown) {
+    console.log(label)
+    console.table(data)
 }
 
 const trainingData : TrainingMovie[] = [
@@ -34,8 +39,27 @@ const trainingData : TrainingMovie[] = [
         year: 2004,
         runtime: 123,
         target: 0
-    },
+    },{title: "Braveheart",
+        year: 1995,
+        runtime: 178,
+        target: 1
+    },{title: "Mean Girls",
+        year: 2004,
+        runtime: 97,
+        target: 0
+    },{title: "Twilight",
+        year: 2008,
+        runtime: 122,
+        target: 0
+    },{title: "The Machinist",
+        year: 2004,
+        runtime: 101,
+        target: 1
+    }
 ]
+// console.log('Initial Training Data')
+// console.table(trainingData)
+table('Initial Training Data', trainingData)
 
 
 // Need to compare movies on a relative scale.
@@ -59,6 +83,9 @@ const network:Network = [
     [0, 0, 0],
     [0, 0, 0]
 ]
+// console.log('Initial Network')
+// console.table(network)
+table('Initial Network', network)
 
 //Sigma Function(https://www.desmos.com/calculator/coknirwubg)
 function sigma(x:number) {
@@ -81,23 +108,19 @@ function perceptron(axons: Axons, a:number, b:number) {
 function getPrediction(network: Network, movie:Movie){
     const normalYear = movie.year - avgYear
     const normalRuntime = movie.runtime - avgRuntime
-    const neuron1 = perceptron(network[0], normalYear, normalRuntime)
+    const firstRow = network[0]
+    const neuron1 = perceptron(firstRow, normalYear, normalRuntime)
     const neuron2 = perceptron(network[1], normalYear, normalRuntime)
     const neuron3 = perceptron(network[2], neuron1, neuron2)
     return neuron3
 }
 
-const prediction = getPrediction(network, trainingData[0])
-console.log(prediction)
 
 function predictMovie<Unpredicted extends Movie>(network:Network, movie:Unpredicted) {
     const prediction = getPrediction(network, movie)
     const predictedMovie : Predicted<Unpredicted> = {...movie, prediction}
     return predictedMovie
 }
-const roboCop = trainingData[0]
-
-const predictedMovie = predictMovie(network, roboCop)
 
 function predictMovies(network:Network, movies:Movie[]) {
     const predictedMovies = movies.map(movie => {
@@ -106,22 +129,16 @@ function predictMovies(network:Network, movies:Movie[]) {
     return predictedMovies
 }
 
-const predictedMovies = predictMovies(network, trainingData)
-console.log(predictedMovies)
-
 //Train Network
-function calculateError(movie:Predicted<TrainingMovie>){
+function trainMovie(movie:Predicted<TrainingMovie>){
     const difference = movie.target - movie.prediction
     const error = Math.abs(difference)
-    const finalMovie:FinalizedMovie = {...movie, error}
+    const finalMovie:TrainedMovie = {...movie, error}
     return finalMovie
 }
-const finalMovie = calculateError(predictedMovie) //Start here in next meeting
-
-console.log(finalMovie)
 
 //Calculate Loss (average error) takes in array of movies, determines how far off a prediction was based on error
-function calculateLoss(movies:FinalizedMovie[]){
+function calculateLoss(movies:TrainedMovie[]){
     const totalError = movies.reduce((totalError, movie)=>{
         return totalError + movie.error
     }, 0)
@@ -129,29 +146,20 @@ function calculateLoss(movies:FinalizedMovie[]){
     return loss
 }
 
-const finalMovies = trainingData.map((movie)=>{
-    const predictedMovie = predictMovie(network, movie)
-    const finalMovie = calculateError(predictedMovie)
-    return finalMovie
-})
-
-function finalizeMovies(network: Network, movies:TrainingMovie[]) {
-    const finalMovies = trainingData.map((movie)=>{
+function trainMovies(network: Network, movies:TrainingMovie[]) {
+    const trainedMovies = trainingData.map((movie)=>{
         const predictedMovie = predictMovie(network, movie)
-        const finalMovie = calculateError(predictedMovie)
-        return finalMovie
+        const trainedMovie = trainMovie(predictedMovie)
+        return trainedMovie
     })
-    return finalMovies
+    return trainedMovies
 }
 
 function getLoss(network: Network, movies:TrainingMovie[]) {
-    const finalMovies = finalizeMovies(network, movies)
+    const finalMovies = trainMovies(network, movies)
     const loss = calculateLoss(finalMovies)
     return loss
 }
-
-const loss = calculateLoss(finalMovies)
-console.log(loss)
 
 //Evolutionary Algo is NEXT
 function mutate(value: number) {
@@ -177,29 +185,37 @@ function evolve(network: Network):Network{
 function displayNumber(value:number) {
     const short = value.toFixed(5)
     return short
-}
 
+}
 function train(network: Network) {
     let steps = 1
-    while (steps < 1000) {
+    while (steps < 3) {
+        console.log('Steps', steps)
         const loss = getLoss(network, trainingData)
+        table('Network', network)
+        console.log('Network Loss', loss)
         const offspring = evolve(network)
+        table('offspring', offspring)
         const offspringLoss = getLoss(offspring, trainingData)
+        console.log('offspringLoss', offspringLoss)
         const improvement = loss - offspringLoss
+        console.log('improvement', improvement)
         if(improvement > 0.0001) {
             network.forEach((axons, index) => {
                 network[index] = offspring[index]
             })
             steps = 1
-            const short = displayNumber(loss)
+            const short = displayNumber(offspringLoss)
             console.log('loss:', short)
         } else steps ++
     }
-    console.log('network')
-    console.table(network)
-    const predictions = finalizeMovies(network, trainingData)
-    console.log('predictions')
-    console.table(predictions)
+    // console.log('network')
+    // console.table(network)
+    table('Trained Network', network)
+    const trainedMovies = trainMovies(network, trainingData)
+    // console.log('predictions')
+    // console.table(predictions)
+    table('Trained Movies', trainedMovies)
 }
 
 train(network)
